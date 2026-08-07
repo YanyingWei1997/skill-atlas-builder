@@ -93,6 +93,18 @@ mv build/skill-inventory.json.new build/skill-inventory.json
 
 Review generated Prompt templates before treating them as final. The scanner creates a useful starting point; semantic curation belongs to the person maintaining the Atlas.
 
+## Classification behavior
+
+The scanner classifies by the Skill's work object rather than by the word `paper` alone:
+
+- manuscript writing, peer review, submission, and reviewer-response tools → `论文写作与审稿`;
+- literature reading, topic design, and research scouting → `研究与文献`;
+- regression, identification, mechanism, heterogeneity, and model evaluation → `数据与计量`;
+- figures, plotting, diagrams, slides, and presentation design → `设计与媒体`;
+- coding, runtime, and developer utilities → `代码与工程`.
+
+This keeps a paper figure in the visual category and a paper's regression tool in the data category, while keeping the manuscript workflow in the paper category.
+
 ## Design and behavior
 
 The template provides:

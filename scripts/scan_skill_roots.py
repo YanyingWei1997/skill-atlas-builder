@@ -59,19 +59,46 @@ def parse_root(value: str) -> tuple[str, Path]:
 
 
 def category(name: str, description: str) -> str:
+    """Classify by work object, not merely by the word 'paper'.
+
+    Visual and empirical tools often mention papers in their descriptions; those
+    signals are checked before the writing/review bucket so a paper figure or
+    regression Skill does not become a manuscript-writing Skill.
+    """
+    ident = slug(name)
     text = f"{name} {description}".lower()
-    groups = [
-        ("论文写作与审稿", ["paper", "manuscript", "journal", "review", "论文", "审稿"]),
-        ("研究与文献", ["research", "literature", "citation", "zotero", "文献", "研究"]),
-        ("数据与计量", ["stata", "regression", "econometric", "panel", "data", "计量", "数据"]),
-        ("设计与媒体", ["design", "diagram", "slide", "image", "video", "visual", "图表", "设计"]),
-        ("教学与课程", ["teach", "course", "lesson", "education", "教学", "课程"]),
-        ("代码与工程", ["code", "coding", "developer", "software", "webapp", "python", "javascript", "编程", "代码"]),
-        ("工作流与管理", ["workflow", "task", "calendar", "notion", "obsidian", "automation", "工作流", "自动化"]),
-    ]
-    for label, words in groups:
-        if any(word in text for word in words):
-            return label
+    explicit = {
+        "paper-spine": "论文写作与审稿",
+        "academic-paper": "论文写作与审稿",
+        "academic-paper-reviewer": "论文写作与审稿",
+        "academic-paper-writer": "论文写作与审稿",
+        "review-paper": "论文写作与审稿",
+        "reviewer-response-docx": "论文写作与审稿",
+        "paper-framework-figure-studio-pro": "设计与媒体",
+        "happy-figure-skill": "设计与媒体",
+        "econ-visualization": "设计与媒体",
+        "empirical-pipeline": "数据与计量",
+        "python-panel-data": "数据与计量",
+        "stata-regression": "数据与计量",
+        "phd-topic-designer": "研究与文献",
+        "nature-reader": "研究与文献",
+    }
+    if ident in explicit:
+        return explicit[ident]
+    if any(k in text for k in ["figure", "plotting", "visualization", "diagram", "drawio", "slide", "presentation", "image generation", "科研绘图", "图表", "配图"]):
+        return "设计与媒体"
+    if any(k in text for k in ["stata", "regression", "econometric", "panel data", "identification strategy", "mechanism analysis", "heterogeneity", "model evaluation", "data analysis", "计量", "回归", "识别策略", "机制检验"]):
+        return "数据与计量"
+    if any(k in text for k in ["paper-review", "manuscript", "journal article", "academic paper", "paper writing", "peer review", "reviewer", "thesis", "dissertation", "论文", "审稿", "学位论文"]):
+        return "论文写作与审稿"
+    if any(k in text for k in ["research", "literature", "citation", "zotero", "topic selection", "paper reader", "文献", "研究", "选题"]):
+        return "研究与文献"
+    if any(k in text for k in ["code", "coding", "developer", "software", "api", "webapp", "javascript", "typescript", "python package", "编程", "代码"]):
+        return "代码与工程"
+    if any(k in text for k in ["teach", "course", "lesson", "education", "教学", "课程"]):
+        return "教学与课程"
+    if any(k in text for k in ["workflow", "task", "calendar", "notion", "obsidian", "automation", "工作流", "自动化"]):
+        return "工作流与管理"
     return "其他"
 
 
