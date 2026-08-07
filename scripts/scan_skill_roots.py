@@ -91,6 +91,10 @@ def category(name: str, description: str) -> str:
         "python-panel-data": "数据与计量",
         "stata-regression": "数据与计量",
         "phd-topic-designer": "研究与文献",
+        "deep-research": "研究与文献",
+        "citation-verification": "研究与文献",
+        "peer-review": "论文写作与审稿",
+        "webapp-testing": "代码与工程",
         "nature-reader": "研究与文献",
     }
     if ident in explicit:
