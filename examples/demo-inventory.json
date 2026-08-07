@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-08-07T19:30:00+08:00",
+  "environmentOrder": ["Codex", "Claude", "pi", "Cola"],
+  "roots": {
+    "Codex": ["/path/to/codex/skills"],
+    "Claude": ["/path/to/claude/skills"],
+    "Cola": ["/path/to/cola/skills"],
+    "pi": ["/path/to/pi/extensions"]
+  },
+  "installRoots": {
+    "Codex": "/path/to/codex/skills",
+    "Claude": "/path/to/claude/skills",
+    "Cola": "/path/to/cola/skills",
+    "pi": null
+  },
+  "skillCount": 2,
+  "environmentCounts": {"Codex": 1, "Claude": 1, "pi": 0, "Cola": 1},
+  "skills": [
+    {
+      "id": "paper-spine",
+      "name": "paper-spine",
+      "description": "End-to-end academic paper workflow.",
+      "descriptionZh": "从材料整理、写作到审计和投稿文件的论文工作流。",
+      "category": "论文写作与审稿",
+      "environments": ["Codex", "Cola"],
+      "locations": [
+        {"environment": "Codex", "path": "/path/to/codex/skills/paper-spine/SKILL.md", "relative": "paper-spine/SKILL.md"},
+        {"environment": "Cola", "path": "/path/to/cola/skills/paper-spine/SKILL.md", "relative": "paper-spine/SKILL.md"}
+      ],
+      "prompt": "$paper-spine\n\n目标：【要完成的论文任务】\n材料：【论文、章节或项目路径】\n约束：【期刊、字数和证据边界】\n\n先读取材料，再输出可直接使用的结果、依据、修改位置和待确认事项。",
+      "variants": [
+        {"id": "draft", "label": "快速起草", "when": "已有材料但还没有成稿", "prompt": "$paper-spine：根据【材料路径】起草【章节/段落】，遵守【约束】，输出可直接修改的初稿和待补证据。"},
+        {"id": "audit", "label": "投稿前审计", "when": "准备投稿", "prompt": "$paper-spine audit：审计【论文路径】，按贡献、方法、证据、引用和格式输出分级问题清单与修改任务。"},
+        {"id": "respond", "label": "回复审稿人", "when": "已有审稿意见", "prompt": "$paper-spine respond：根据【论文路径】和【审稿意见路径】逐条生成回复，标注修改位置和仍需补证内容。"},
+        {"id": "humanize", "label": "学术润色", "when": "论证已确定但表达需要改善", "prompt": "$paper-spine humanize：润色【段落路径】，保持原意和证据边界，输出修改稿与关键改动说明。"}
+      ],
+      "trigger": "$paper-spine",
+      "scenario": "论文重写、审计、回复审稿意见和投稿准备",
+      "keywords": "paper 论文 写作 审稿 投稿",
+      "featured": true,
+      "overlap": true,
+      "environmentCount": 2,
+      "promptSchemaVersion": "atlas-1"
+    },
+    {
+      "id": "webapp-testing",
+      "name": "webapp-testing",
+      "description": "Test local web applications and verify browser interactions.",
+      "descriptionZh": "测试本地网页、验证关键交互并收集截图与日志。",
+      "category": "代码与工程",
+      "environments": ["Codex"],
+      "locations": [
+        {"environment": "Codex", "path": "/path/to/codex/skills/webapp-testing/SKILL.md", "relative": "webapp-testing/SKILL.md"}
+      ],
+      "prompt": "$webapp-testing\n\n项目路径：【repo_path】\n任务或复现步骤：【task_or_reproduction】\n验收标准：【acceptance_criteria】\n\n先检查项目结构和启动方式，再验证关键流程。输出根因/方案、修改文件、测试结果、截图日志和运行命令。",
+      "variants": [
+        {"id": "implement", "label": "实现功能", "when": "需要完成网页需求", "prompt": "$webapp-testing：在【项目路径】实现【功能】，遵守【约束】，使用浏览器验证【验收标准】并报告结果。"},
+        {"id": "debug", "label": "排查交互", "when": "页面行为异常", "prompt": "$webapp-testing debug：分析【错误信息】和【复现步骤】，先复现再定位，输出根因、最小修复和验证步骤。"},
+        {"id": "review", "label": "审查页面", "when": "需要检查已有页面", "prompt": "$webapp-testing：审查【页面/代码路径】，覆盖关键流程、响应式、控制台错误和可访问性，按严重程度输出问题。"},
+        {"id": "deliver", "label": "整理交付", "when": "准备交付网页", "prompt": "$webapp-testing：把【项目路径】整理为可运行交付物，补齐入口、README、测试和命令，并列出实际验证过的内容。"}
+      ],
+      "trigger": "$webapp-testing",
+      "scenario": "本地网页测试、调试和交付验收",
+      "keywords": "webapp webpage browser playwright test frontend",
+      "featured": true,
+      "overlap": false,
+      "environmentCount": 1,
+      "promptSchemaVersion": "atlas-1"
+    }
+  ]
+}
