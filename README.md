@@ -109,7 +109,8 @@ This keeps a paper figure in the visual category and a paper's regression tool i
 
 The template provides:
 
-- task-first navigation;
+- task-first navigation, with task counts derived from each Skill's primary work-object category rather than loose keyword matches;
+- explicit note that per-runtime counts are independent and can overlap;
 - all, featured, favorites, and multi-runtime views;
 - environment and category filters;
 - relevance search across names, descriptions, scenarios, keywords, and Prompts;
