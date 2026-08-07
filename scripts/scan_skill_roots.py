@@ -112,6 +112,40 @@ def category(name: str, description: str) -> str:
     return "其他"
 
 
+CATEGORY_PURPOSE = {
+    "论文写作与审稿": "论文写作、修改、审稿或投稿材料",
+    "研究与文献": "文献检索、阅读、研究设计或证据整理",
+    "数据与计量": "数据处理、计量分析、复现或结果核查",
+    "设计与媒体": "图表、网页、PPT、配图或其他视觉媒体",
+    "代码与工程": "代码实现、调试、测试或工程交付",
+    "教学与课程": "课程设计、教学材料或练习评价",
+    "工作流与管理": "笔记、任务、邮件、日历或自动化工作流",
+    "其他": "原始说明中定义的专项任务",
+}
+
+GENERIC_ZH = {"", "用于检索、阅读、文献综述、引用管理和证据整理。", "用于网页、课件、图表、配图、演示文稿和多媒体制作。", "用于数据清洗、计量分析、绘图、复现和结果核查。", "用途暂未归入主要工作流，打开详情查看原始说明和来源路径。"}
+
+
+def description_zh(previous: dict[str, Any], name: str, category_name: str) -> str:
+    old = str(previous.get("descriptionZh") or "").strip()
+    if old and old not in GENERIC_ZH and not old.startswith("待补充"):
+        return old
+    purpose = CATEGORY_PURPOSE.get(category_name, CATEGORY_PURPOSE["其他"])
+    return f"围绕“{name}”处理{purpose}；具体能力以详情中的原始说明和来源文件为准。"
+
+
+def scenario_for(category_name: str) -> str:
+    return {
+        "论文写作与审稿": "当你需要写论文、改稿、审稿、回复意见或准备投稿材料时使用。",
+        "研究与文献": "当你需要检索、阅读文献、设计研究问题或整理证据时使用。",
+        "数据与计量": "当你需要清洗数据、估计模型、复现结果或核查数据与代码时使用。",
+        "设计与媒体": "当你需要制作图表、网页、PPT、配图、音视频或其他视觉交付物时使用。",
+        "代码与工程": "当你需要实现功能、排查报错、测试代码、操作仓库或完成工程交付时使用。",
+        "教学与课程": "当你需要备课、设计课程、生成练习或建立评价方案时使用。",
+        "工作流与管理": "当你需要处理笔记、邮件、日历、任务或自动化流程时使用。",
+    }.get(category_name, "当任务与该 Skill 的原始说明直接相关时使用，并先核对输入和前置条件。")
+
+
 def base_prompt(name: str, description: str, group: str) -> str:
     return (f"${name}\n\n请完成与“{description or name}”相关的任务。\n"
             f"目标：【要完成的具体动作】\n材料：【路径或文本；缺失时说明】\n"
@@ -169,18 +203,18 @@ def main() -> None:
     records: list[dict[str, Any]] = []
     for ident, row in sorted(grouped.items()):
         previous = old_by_id.get(ident, {})
-        group = previous.get("category") or category(row["name"], row["description"])
+        group = category(row["name"], row["description"])
         record = dict(previous)
         record.update(row)
         record["category"] = group
-        record["descriptionZh"] = previous.get("descriptionZh") or row["description"] or f"处理 {row['name']} 相关任务。"
+        record["descriptionZh"] = description_zh(previous, row["name"], group)
         record["environments"] = sorted({x["environment"] for x in row["locations"]})
         record["locations"] = sorted(row["locations"], key=lambda x: (x["environment"], x["path"]))
         record["environmentCount"] = len(record["environments"])
         record["overlap"] = record["environmentCount"] > 1
         record["featured"] = bool(previous.get("featured", False))
-        record["trigger"] = previous.get("trigger") or f"${ident}"
-        record["scenario"] = previous.get("scenario") or ""
+        record["trigger"] = previous.get("trigger") or f"用 `{ident}`"
+        record["scenario"] = previous.get("scenario") or scenario_for(group)
         record["keywords"] = previous.get("keywords") or f"{ident} {row['description']} {group}"
         record["prompt"] = previous.get("prompt") or base_prompt(ident, row["description"], group)
         record["variants"] = previous.get("variants") or variants(ident, group)
