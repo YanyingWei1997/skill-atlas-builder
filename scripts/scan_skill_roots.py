@@ -206,12 +206,16 @@ def load_json(path: Path) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", action="append", required=True, type=parse_root, help="ENV=/absolute/path，可重复")
+    parser.add_argument("--install-root", action="append", type=parse_root, help="安装目标 ENV=/absolute/path；默认使用该环境传入的第一个 root")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--preserve", type=Path)
     args = parser.parse_args()
     root_groups: dict[str, list[Path]] = {}
     for env, root in args.root:
         root_groups.setdefault(env, []).append(root)
+    install_roots = {env: roots[0] for env, roots in root_groups.items() if roots}
+    for env, root in args.install_root or []:
+        install_roots[env] = root
     old = load_json(args.preserve) if args.preserve else {}
     old_by_id = {str(item.get("id")): item for item in old.get("skills", []) if item.get("id")}
     grouped: dict[str, dict[str, Any]] = {}
@@ -259,7 +263,7 @@ def main() -> None:
         "generatedAt": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "environmentOrder": list(root_groups),
         "roots": {env: [str(root) for root in env_roots] for env, env_roots in root_groups.items()},
-        "installRoots": {env: str(env_roots[0]) for env, env_roots in root_groups.items()},
+        "installRoots": {env: str(install_roots[env]) for env in root_groups if env in install_roots},
         "skillCount": len(records),
         "environmentCounts": env_counts,
         "scanErrors": errors,

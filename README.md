@@ -71,13 +71,16 @@ python3 scripts/scan_skill_roots.py \
   --output build/skill-inventory.json
 ```
 
-For pi or another runtime, provide the directory that actually contains its `SKILL.md` files:
+For pi or another runtime, provide the directory that actually contains its `SKILL.md` files. pi's npm packages can be scanned while installs target pi's global Skill directory:
 
 ```bash
 python3 scripts/scan_skill_roots.py \
   --root pi="$HOME/.pi/agent/npm/node_modules" \
+  --install-root pi="$HOME/.pi/agent/skills" \
   --output build/skill-inventory.json
 ```
+
+`--install-root` is optional. When omitted, the first `--root` for that environment is used for install and delete commands.
 
 ## Preserve your curation
 
