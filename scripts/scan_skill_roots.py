@@ -68,6 +68,23 @@ def category(name: str, description: str) -> str:
     ident = slug(name)
     text = f"{name} {description}".lower()
     explicit = {
+        "01-topic": "课题基金申请",
+        "02-literature-plan": "课题基金申请",
+        "03-academic-search": "课题基金申请",
+        "04-paper-digest": "课题基金申请",
+        "05-synthesis": "课题基金申请",
+        "06-helm": "课题基金申请",
+        "07-outline": "课题基金申请",
+        "08-section-write": "课题基金申请",
+        "09-assemble": "课题基金申请",
+        "10-review": "课题基金申请",
+        "11-output": "课题基金申请",
+        "auto": "课题基金申请",
+        "fund-background-writer": "课题基金申请",
+        "fund-literature-review-writer": "课题基金申请",
+        "fund-research-content-writer": "课题基金申请",
+        "fund-technical-route-writer": "课题基金申请",
+        "review-grant": "课题基金申请",
         "paper-spine": "论文写作与审稿",
         "academic-paper": "论文写作与审稿",
         "academic-paper-reviewer": "论文写作与审稿",
@@ -103,6 +120,8 @@ def category(name: str, description: str) -> str:
         return "设计与媒体"
     if any(k in text for k in ["stata", "regression", "econometric", "panel data", "identification strategy", "mechanism analysis", "heterogeneity", "model evaluation", "data analysis", "计量", "回归", "识别策略", "机制检验"]):
         return "数据与计量"
+    if any(k in text for k in ["grant", "funding", "fund proposal", "research proposal", "nsfc", "proposal writing", "申请书", "课题申请", "基金申请", "项目申请"]):
+        return "课题基金申请"
     if any(k in text for k in ["paper-review", "manuscript", "journal article", "academic paper", "paper writing", "peer review", "reviewer", "thesis", "dissertation", "论文", "审稿", "学位论文"]):
         return "论文写作与审稿"
     if any(k in text for k in ["research", "literature", "citation", "zotero", "topic selection", "paper reader", "文献", "研究", "选题"]):
@@ -117,6 +136,7 @@ def category(name: str, description: str) -> str:
 
 
 CATEGORY_PURPOSE = {
+    "课题基金申请": "课题立项、基金申请书和申报评审材料",
     "论文写作与审稿": "论文写作、修改、审稿或投稿材料",
     "研究与文献": "文献检索、阅读、研究设计或证据整理",
     "数据与计量": "数据处理、计量分析、复现或结果核查",
@@ -140,6 +160,7 @@ def description_zh(previous: dict[str, Any], name: str, category_name: str) -> s
 
 def scenario_for(category_name: str) -> str:
     return {
+        "课题基金申请": "当你需要做课题论证、写基金申请书、组织研究方案或进行申报评审时使用。",
         "论文写作与审稿": "当你需要写论文、改稿、审稿、回复意见或准备投稿材料时使用。",
         "研究与文献": "当你需要检索、阅读文献、设计研究问题或整理证据时使用。",
         "数据与计量": "当你需要清洗数据、估计模型、复现结果或核查数据与代码时使用。",
@@ -151,6 +172,13 @@ def scenario_for(category_name: str) -> str:
 
 
 def base_prompt(name: str, description: str, group: str) -> str:
+    if group == "课题基金申请":
+        return (f"${name}\n\n请完成以下课题或基金申请任务。\n"
+                "课题/申报类型：【课题名称、基金类型、申报年度和指南要求】\n"
+                "材料：【课题资料、政策/指南、文献、前期成果或项目路径】\n"
+                "任务：【立项依据、科学问题、研究内容、技术路线、创新点或评审】\n"
+                "约束：【字数、格式、评审标准和证据边界】\n\n"
+                "区分已核验事实、研究设想、估计值和待补证内容；输出可直接使用的结果、依据、材料位置和待确认事项。")
     return (f"${name}\n\n请完成与“{description or name}”相关的任务。\n"
             f"目标：【要完成的具体动作】\n材料：【路径或文本；缺失时说明】\n"
             f"约束：【范围、格式、权限和证据边界】\n\n"
@@ -159,6 +187,7 @@ def base_prompt(name: str, description: str, group: str) -> str:
 
 def variants(name: str, group: str) -> list[dict[str, str]]:
     presets = {
+        "课题基金申请": [("background", "写立项依据", "根据【课题资料】、【政策/指南】和【已核验文献】撰写【立项依据/研究意义】，区分事实、判断和待核验内容。"), ("scheme", "搭研究方案", "围绕【核心科学问题】组织【研究目标、研究内容、技术路线、创新点和风险控制】，标注各项依据。"), ("review", "申报前审查", "审查【申请书路径】，对照【申报指南/评审标准】检查科学问题、创新性、可行性、工作基础、预算、格式和证据边界，按优先级输出修改任务。"), ("outline", "拆解写作任务", "把【申请书大纲/材料路径】拆成写作单元，分配目标字数、论证任务、证据来源、图表和前置依赖。")],
         "代码与工程": [("implement", "实现功能", "在【项目路径】实现【功能】，遵守【技术和兼容性约束】，运行测试并输出变更文件、命令和结果。"), ("debug", "排查报错", "分析【错误信息】和【复现步骤】，先复现再定位，输出根因、最小修复和验证步骤。"), ("review", "代码审查", "审查【diff/目录路径】，按严重程度输出文件位置、证据、影响和可执行修复建议。"), ("deliver", "整理交付", "把【项目路径】整理为可运行交付物，补齐入口、README、测试和运行命令。")],
         "数据与计量": [("audit", "先做数据审计", "审计【数据路径】，检查变量、单位、缺失、重复、异常和时间/面板结构；先不要估计。"), ("estimate", "指定模型估计", "使用【因变量】、【核心变量】、【控制变量】和【模型】分析【数据路径】，说明识别假设和推断方案。"), ("reproduce", "复现结果", "复现【项目路径】中的【表/图】，核对数据、脚本、样本、变量和结果，输出差异与根因。"), ("output", "输出表图", "把【结果/代码路径】整理成【Markdown/CSV/LaTeX/PNG】表图，附生成代码和单位说明。")],
         "论文写作与审稿": [("draft", "快速起草", "根据【材料路径】起草【章节/段落】，遵守【期刊和字数约束】，输出初稿与待补证据。"), ("review", "投稿前审计", "审计【论文路径】，覆盖贡献、方法、证据、引用和格式，按严重程度输出修改任务。"), ("respond", "回复审稿人", "根据【论文路径】和【审稿意见】逐条生成回复，标注修改位置和仍需补证内容。"), ("polish", "保持证据边界", "润色【段落路径】，保持原意；无法由材料支持的表述标记为【待核验】。")],
@@ -207,6 +236,7 @@ def main() -> None:
     records: list[dict[str, Any]] = []
     for ident, row in sorted(grouped.items()):
         previous = old_by_id.get(ident, {})
+        previous_category = previous.get("category")
         group = category(row["name"], row["description"])
         record = dict(previous)
         record.update(row)
@@ -218,11 +248,11 @@ def main() -> None:
         record["overlap"] = record["environmentCount"] > 1
         record["featured"] = bool(previous.get("featured", False))
         record["trigger"] = previous.get("trigger") or f"用 `{ident}`"
-        record["scenario"] = previous.get("scenario") or scenario_for(group)
+        record["scenario"] = scenario_for(group) if previous_category != group or not previous.get("scenario") else previous["scenario"]
         record["keywords"] = previous.get("keywords") or f"{ident} {row['description']} {group}"
-        record["prompt"] = previous.get("prompt") or base_prompt(ident, row["description"], group)
-        record["variants"] = previous.get("variants") or variants(ident, group)
-        record["promptSchemaVersion"] = previous.get("promptSchemaVersion") or "atlas-1"
+        record["prompt"] = base_prompt(ident, row["description"], group) if previous_category != group or not previous.get("prompt") else previous["prompt"]
+        record["variants"] = variants(ident, group) if previous_category != group or not previous.get("variants") else previous["variants"]
+        record["promptSchemaVersion"] = "atlas-2" if previous_category != group else (previous.get("promptSchemaVersion") or "atlas-1")
         records.append(record)
     env_counts = {env: sum(env in r["environments"] for r in records) for env in root_groups}
     data = {

@@ -98,6 +98,7 @@ Review generated Prompt templates before treating them as final. The scanner cre
 The scanner classifies by the Skill's work object rather than by the word `paper` alone:
 
 - manuscript writing, peer review, submission, and reviewer-response tools → `论文写作与审稿`;
+- grant topic framing, proposal writing, research plans, application review, and submission output → `课题基金申请`;
 - literature reading, topic design, and research scouting → `研究与文献`;
 - regression, identification, mechanism, heterogeneity, and model evaluation → `数据与计量`;
 - figures, plotting, diagrams, slides, and presentation design → `设计与媒体`;
