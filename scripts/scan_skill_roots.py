@@ -185,7 +185,35 @@ def base_prompt(name: str, description: str, group: str) -> str:
             "先检查输入和前置条件，再执行核心任务。输出可直接使用的结果、依据、验证结果和待确认事项；输入缺失时停止并列出缺失项。")
 
 
-def variants(name: str, group: str) -> list[dict[str, str]]:
+def specialized_variants(name: str, description: str) -> list[tuple[str, str, str]]:
+    ident = name.lower()
+    if ident in {"academic-paper", "academic-pipeline", "paper-spine", "social-science-paperwork"}:
+        return []
+    if ident in {"academic-humanizer", "dissertation-polisher-zh", "writing-anti-ai"}:
+        return [("voice", "保留作者语气", "润色【段落/章节路径】，保持作者原有语气、论点和证据强度；输出修改稿与不应改动的判断。"), ("mechanical", "降低机械表达", "检查【文本路径】中的模板化、重复和空泛表达，在不增加新事实的前提下改写，并列出具体改动。"), ("academic", "学术语气对照", "为【原文路径】输出原文、学术化修改稿和逐句修改理由；不要改变变量、结论、引用和限定条件。"), ("evidence", "保持证据边界", "重写【文本路径】，只使用已有材料；无法由材料支持的强化表述标记为【待核验】。")]
+    if ident in {"preflight-audit", "paper-self-review", "academic-paper-reviewer", "paper-review"}:
+        return [("gate", "投稿门禁", "审计【论文/项目路径】是否达到投稿或交付门槛，按致命、重要、一般问题输出阻塞清单。"), ("evidence", "证据审计", "检查【论文路径】的主张、数据、方法、引用和图表是否相互支持；标出证据缺口。"), ("integrity", "格式与完整性", "检查【交付目录】的文件、命名、引用、表图、附录和编译/打开状态，给出修复顺序。"), ("tasks", "生成修订清单", "把【审计结果/论文路径】转换为带文件位置、优先级、验收标准和负责人字段的修订任务表。")]
+    hay = f"{name} {description}".lower()
+    profiles = [
+        (("bibtex", "citation", "zotero", "引用"), [("parse", "解析 BibTeX", "读取【.bib 文件路径】并解析条目；报告键名、作者、标题、年份、DOI 和缺失字段，不要擅自补全。"), ("validate", "校验引用字段", "检查【.bib 文件路径】中的重复键、必填字段、作者格式和 DOI；按错误、警告、待人工核验分级输出。"), ("verify", "核对文献元数据", "根据【BibTeX 条目】和【DOI/数据库来源】逐字段核对标题、作者、年份和期刊；标注冲突来源。"), ("export", "导出引用库", "将【BibTeX/引用数据库路径】清理后导出为【BibTeX/CSL-JSON/CSV】，附变更日志和未解决条目。")]),
+        (("playwright", "webapp", "frontend", "网页", "browser"), [("reproduce", "复现交互问题", "在【项目路径】按【复现步骤】验证页面，记录控制台错误、网络请求和实际结果；先复现再判断根因。"), ("implement", "实现页面功能", "在【项目路径】实现【页面/交互功能】，遵守【技术和视觉约束】，补充最小可靠测试。"), ("browser", "浏览器验收", "用浏览器验证【验收标准】，覆盖桌面/移动视口、关键点击、表单状态和控制台错误，只报告实际结果。"), ("deliver", "整理网页交付", "将【项目路径】整理为可运行网页交付物，检查启动命令、资源路径、构建产物和 README。")]),
+        (("latex-", "beamer", "tex-to", "typesetting", "omml-to", "convert-latex", "编译 tex", "排版模板"), [("compile", "编译排错", "编译【TeX 项目路径】，定位首个根因，区分环境、语法、引用和排版警告，给出最小修复。"), ("template", "适配期刊模板", "根据【期刊/会议模板路径】调整【TeX 项目】的文档类、宏包、章节、引用和图表格式。"), ("figures", "整理表图与引用", "检查【TeX 项目路径】中的表格、图片、交叉引用和参考文献，输出问题位置和修复补丁。"), ("package", "准备投稿包", "将【TeX 项目路径】整理成可提交压缩包，检查主文件、图片、.bib、辅助文件和匿名化要求。")]),
+        (("document-extract", "table-lossless-extract", "text-extract", "pdf-", "docx-", "xlsx-", "omml-", "文档提取", "表格提取"), [("extract", "抽取结构化内容", "从【文档路径】抽取【文本/表格/标题/元数据】，保留页码、表号、单位和原始顺序。"), ("convert", "保留结构转换", "将【源文档路径】转换为【目标格式】，保留标题、表格、脚注、引用和关键格式，并列出转换损失。"), ("batch", "批量处理文档", "批量处理【文件夹路径】中的【文档类型】，先抽样检查，再输出文件清单、失败项和日志。"), ("check", "核验交付文件", "检查【输出文档路径】的内容完整性、页数、表格、链接、编码和可打开性。")]),
+        (("stata", "回归", "计量", "面板", "econometric", "event study"), [("audit", "审计变量与面板", "审计【数据路径】的变量定义、单位、缺失、重复、时间/地区键和面板结构；先不估计。"), ("identify", "落实识别策略", "根据【研究问题】、【处理变量】和【数据路径】设计/估计【模型】，明确识别假设、固定效应和聚类层级。"), ("robust", "做稳健性核查", "对【主回归脚本/结果路径】执行【稳健性方案】，核对样本、变量、标准误和结果方向。"), ("output", "输出计量结果", "将【回归结果/代码路径】整理为【表格/图形】，统一变量标签、单位、样本说明并附命令。")]),
+        (("data cleaning", "数据清洗", "empirical pipeline", "数据管道", "数据处理"), [("input", "检查数据入口", "检查【项目/数据路径】的原始文件、字段、编码、单位和时间范围，建立输入清单。"), ("run", "执行清洗管道", "运行【脚本/管道入口】处理【数据路径】，记录输入、输出、筛选、缺失和异常。"), ("reproduce", "复现处理结果", "复现【项目路径】生成的【数据/表/图】，核对脚本版本、样本量、变量和输出差异。"), ("handoff", "整理数据交付", "将【处理后数据/项目路径】整理为可复现交付物，补齐字典、来源、命令、质量检查和已知缺口。")]),
+        (("infographic", "diagram", "visualization", "科研图表", "图形摘要", "配图", "ppt", "幻灯片"), [("map", "明确内容映射", "根据【数据/文案/论文路径】确定信息层级、变量映射、读者和交付尺寸，再制作。"), ("figure", "制作科研图表", "根据【结果/数据路径】制作【图表/机制图/技术路线图】，保持单位、样本、图例和证据边界准确。"), ("reference", "按参考图改造", "参考【图片路径】，保留【必须保留元素】，修改【目标区域/内容】，输出【格式/尺寸】。"), ("compare", "比较交付方向", "为【内容】生成【数量】个视觉方向，比较信息层级、可读性和适用场景，推荐一个方案。")]),
+        (("literature", "文献阅读", "文献检索", "deep research", "研究设计", "证据矩阵"), [("search", "设计检索式", "围绕【研究问题】制定数据库检索式和筛选标准，输出检索记录。"), ("read", "深读单篇文献", "阅读【论文路径/DOI/网址】，提取问题、机制、数据、方法、结论和局限，区分原文与判断。"), ("matrix", "建立证据矩阵", "根据【文献目录/材料路径】建立问题、样本、方法、结论和证据强度矩阵。"), ("memo", "形成研究备忘录", "根据【已核验文献和材料】形成【主题】备忘录，列出争议、证据缺口和下一步检索。")]),
+    ]
+    for signals, rows in profiles:
+        if any(signal in hay for signal in signals):
+            return rows
+    return []
+
+
+def variants(name: str, group: str, description: str = "") -> list[dict[str, str]]:
+    rows = specialized_variants(name, description)
+    if rows:
+        return [{"id": ident, "label": label, "when": label, "prompt": f"${name} {ident}\n\n{prompt}"} for ident, label, prompt in rows]
     presets = {
         "课题基金申请": [("background", "写立项依据", "根据【课题资料】、【政策/指南】和【已核验文献】撰写【立项依据/研究意义】，区分事实、判断和待核验内容。"), ("scheme", "搭研究方案", "围绕【核心科学问题】组织【研究目标、研究内容、技术路线、创新点和风险控制】，标注各项依据。"), ("review", "申报前审查", "审查【申请书路径】，对照【申报指南/评审标准】检查科学问题、创新性、可行性、工作基础、预算、格式和证据边界，按优先级输出修改任务。"), ("outline", "拆解写作任务", "把【申请书大纲/材料路径】拆成写作单元，分配目标字数、论证任务、证据来源、图表和前置依赖。")],
         "代码与工程": [("implement", "实现功能", "在【项目路径】实现【功能】，遵守【技术和兼容性约束】，运行测试并输出变更文件、命令和结果。"), ("debug", "排查报错", "分析【错误信息】和【复现步骤】，先复现再定位，输出根因、最小修复和验证步骤。"), ("review", "代码审查", "审查【diff/目录路径】，按严重程度输出文件位置、证据、影响和可执行修复建议。"), ("deliver", "整理交付", "把【项目路径】整理为可运行交付物，补齐入口、README、测试和运行命令。")],
@@ -254,9 +282,10 @@ def main() -> None:
         record["trigger"] = previous.get("trigger") or f"用 `{ident}`"
         record["scenario"] = scenario_for(group) if previous_category != group or not previous.get("scenario") else previous["scenario"]
         record["keywords"] = previous.get("keywords") or f"{ident} {row['description']} {group}"
-        record["prompt"] = base_prompt(ident, row["description"], group) if previous_category != group or not previous.get("prompt") else previous["prompt"]
-        record["variants"] = variants(ident, group) if previous_category != group or not previous.get("variants") else previous["variants"]
-        record["promptSchemaVersion"] = "atlas-2" if previous_category != group else (previous.get("promptSchemaVersion") or "atlas-1")
+        needs_prompt_refresh = previous_category != group or previous.get("promptSchemaVersion") != "atlas-3"
+        record["prompt"] = base_prompt(ident, row["description"], group) if needs_prompt_refresh or not previous.get("prompt") else previous["prompt"]
+        record["variants"] = variants(ident, group, row["description"]) if needs_prompt_refresh or not previous.get("variants") else previous["variants"]
+        record["promptSchemaVersion"] = "atlas-3"
         records.append(record)
     env_counts = {env: sum(env in r["environments"] for r in records) for env in root_groups}
     data = {
