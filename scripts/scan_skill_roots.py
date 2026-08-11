@@ -17,12 +17,38 @@ def slug(value: str) -> str:
     return value or "unnamed-skill"
 
 
-def frontmatter(path: Path) -> dict[str, str]:
+def extract_capabilities(text: str) -> list[dict[str, str]]:
+    generic = {"overview", "introduction", "instructions", "usage", "examples", "example", "setup", "installation", "requirements", "reference", "references", "notes", "workflow", "quick start", "appendix", "troubleshooting", "license", "metadata", "purpose", "when to use", "example prompts", "example output", "software", "packages", "trigger conditions", "trigger keywords", "plan mode activation", "does not trigger", "core problems", "verification principles", "design thinking", "design principles", "summary", "best practices", "common pitfalls", "writing tips", "agent team", "output", "changelog", "output formats", "text formats", "figures", "citation formats", "提取流程", "输出示例", "完整调用示例", "概述", "简介", "说明", "使用方法", "示例", "安装", "依赖", "参考", "备注", "工作流", "快速开始", "附录", "故障排除"}
+    result: list[dict[str, str]] = []
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        match = re.match(r"^#{2,3}\s+(.+?)\s*$", line)
+        if not match:
+            continue
+        heading = re.sub(r"[`*_#]", "", match.group(1)).strip(" ：:-")
+        normalized = re.sub(r"\s+", " ", heading).lower()
+        if not heading or normalized in generic or normalized.startswith(("step ", "步骤 ")):
+            continue
+        if not (3 <= len(heading) <= 56) or any(item["title"] == heading for item in result):
+            continue
+        summary = ""
+        for candidate in lines[index + 1 :]:
+            if re.match(r"^#{1,3}\s+", candidate):
+                break
+            candidate = candidate.strip().lstrip("-*").strip()
+            if candidate and not candidate.startswith(("```", "<!--", "![")):
+                summary = re.sub(r"[`*_]", "", candidate)[:220]
+                break
+        result.append({"title": heading, "summary": summary})
+    return result[:24]
+
+
+def frontmatter(path: Path) -> dict[str, Any]:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return {}
-    result: dict[str, str] = {}
+    result: dict[str, Any] = {"capabilities": extract_capabilities(text)}
     if text.startswith("---"):
         end = text.find("\n---", 3)
         if end >= 0:
@@ -210,7 +236,31 @@ def specialized_variants(name: str, description: str) -> list[tuple[str, str, st
     return []
 
 
-def variants(name: str, group: str, description: str = "") -> list[dict[str, str]]:
+def documented_variants(name: str, capabilities: list[Any]) -> list[dict[str, str]]:
+    generic_actions = {"understand the context", "generate the output", "verify and explain", "integration into writing process"}
+    headings: list[tuple[str, str]] = []
+    for value in capabilities:
+        if isinstance(value, dict):
+            heading = str(value.get("title") or "").strip()
+            summary = str(value.get("summary") or "").strip()
+        else:
+            heading = str(value).strip()
+            summary = ""
+        normalized = re.sub(r"^(?:step|步骤|sub-mode|layer)?\s*\d+(?:\.\d+)?\s*[:：.-]*\s*", "", heading, flags=re.I).strip()
+        if not normalized or normalized.lower() in generic_actions:
+            continue
+        actionable = any(token in normalized.lower() for token in ("verify", "verification", "validation", "google scholar", "matching", "claim", "extract", "parse", "compile", "convert", "review", "audit", "write", "generate", "design", "run", "export", "latex", "paperfit", "图表", "检查", "核验", "验证", "提取", "解析", "编译", "转换", "审查", "撰写", "生成", "设计", "运行", "导出", "步骤", "模式", "缺陷"))
+        if actionable and all(existing[0] != normalized for existing in headings):
+            headings.append((normalized, summary))
+    if len(headings) < 3:
+        return []
+    return [{"id": f"documented-{index}", "label": heading[:32], "when": heading, "prompt": f"${name}\n\n按此 Skill 文档中的“{heading}”能力处理【具体任务】；材料在【路径/文本】。{'该能力说明：' + summary + '。' if summary else ''}仅执行相关步骤、命令和检查，输出实际结果、依据和未完成项。"} for index, (heading, summary) in enumerate(headings[:4], 1)]
+
+
+def variants(name: str, group: str, description: str = "", capabilities: list[Any] | None = None) -> list[dict[str, str]]:
+    documented = documented_variants(name, capabilities or [])
+    if documented:
+        return documented
     rows = specialized_variants(name, description)
     if rows:
         return [{"id": ident, "label": label, "when": label, "prompt": f"${name} {ident}\n\n{prompt}"} for ident, label, prompt in rows]
@@ -261,7 +311,10 @@ def main() -> None:
                     relative = str(path.relative_to(root))
                 except ValueError:
                     relative = path.name
-                row = grouped.setdefault(ident, {"id": ident, "name": name, "description": meta.get("description", ""), "locations": []})
+                row = grouped.setdefault(ident, {"id": ident, "name": name, "description": meta.get("description", ""), "capabilities": [], "locations": []})
+                for capability in meta.get("capabilities", []):
+                    if capability not in row["capabilities"]:
+                        row["capabilities"].append(capability)
                 if meta.get("description") and not row.get("description"):
                     row["description"] = meta["description"]
                 row["locations"].append({"environment": env, "path": str(path), "relative": relative})
@@ -276,16 +329,17 @@ def main() -> None:
         record["descriptionZh"] = description_zh(previous, row["name"], group)
         record["environments"] = sorted({x["environment"] for x in row["locations"]})
         record["locations"] = sorted(row["locations"], key=lambda x: (x["environment"], x["path"]))
+        record["capabilities"] = list(record.get("capabilities", []))[:8]
         record["environmentCount"] = len(record["environments"])
         record["overlap"] = record["environmentCount"] > 1
         record["featured"] = bool(previous.get("featured", False))
         record["trigger"] = previous.get("trigger") or f"用 `{ident}`"
         record["scenario"] = scenario_for(group) if previous_category != group or not previous.get("scenario") else previous["scenario"]
         record["keywords"] = previous.get("keywords") or f"{ident} {row['description']} {group}"
-        needs_prompt_refresh = previous_category != group or previous.get("promptSchemaVersion") != "atlas-3"
+        needs_prompt_refresh = previous_category != group or previous.get("promptSchemaVersion") != "atlas-9"
         record["prompt"] = base_prompt(ident, row["description"], group) if needs_prompt_refresh or not previous.get("prompt") else previous["prompt"]
-        record["variants"] = variants(ident, group, row["description"]) if needs_prompt_refresh or not previous.get("variants") else previous["variants"]
-        record["promptSchemaVersion"] = "atlas-3"
+        record["variants"] = variants(ident, group, row["description"], record["capabilities"]) if needs_prompt_refresh or not previous.get("variants") else previous["variants"]
+        record["promptSchemaVersion"] = "atlas-9"
         records.append(record)
     env_counts = {env: sum(env in r["environments"] for r in records) for env in root_groups}
     data = {
